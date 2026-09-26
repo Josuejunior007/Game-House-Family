@@ -1,16 +1,24 @@
 package io.github.josuejunior007.gamehousefamily.model;
 
+import jakarta.persistence.*;
+
+@Entity
 public class Game {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private int id;
-    private final String steamAppId;
+    @Column(unique = true, name = "steam_app_id", nullable = false)
+    private String steamAppId;
+    @Column(nullable = false)
     private String name;
 
-    public Game (int id, String steamAppId, String name) {
-        this.id = id;
+    public Game (String steamAppId, String name) {
         this.steamAppId = steamAppId;
         this.name = name;
     }
+
+    protected Game() {}
 
     public String getName(){
         return name;
@@ -19,6 +27,6 @@ public class Game {
         return id;
     }
     public String getSteamAppId() {
-        return steamAppId;
+            return steamAppId;
     }
 }

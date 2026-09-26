@@ -5,16 +5,17 @@ import io.github.josuejunior007.gamehousefamily.service.GameService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @RestController
-public class HomeController {
+public class GameController {
 
-    @GetMapping("/")
-    public String home(){
+    private final GameService buscador;
 
-        return "Game House Family";
+    public GameController(GameService buscador) {
+        this.buscador = buscador;
     }
 
+    @GetMapping("/game")
+    public Game buscar() {
+        return buscador.getGame();
+    }
 }

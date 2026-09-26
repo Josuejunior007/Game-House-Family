@@ -8,7 +8,7 @@ public class GameService {
 
     public Game getGame(){
 
-        Game REMATCH = new Game(1, "2138720", "REMATCH");
+        Game REMATCH = new Game("2138720", "REMATCH");
 
         return REMATCH;
     }
