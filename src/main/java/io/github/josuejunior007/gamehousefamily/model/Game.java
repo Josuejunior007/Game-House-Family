@@ -13,7 +13,7 @@ public class Game {
     @Column(nullable = false)
     private String name;
 
-    public Game (String steamAppId, String name) {
+    public Game(String steamAppId, String name) {
         this.steamAppId = steamAppId;
         this.name = name;
     }
