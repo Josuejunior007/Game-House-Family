@@ -4,6 +4,8 @@ import io.github.josuejunior007.gamehousefamily.model.Game;
 import io.github.josuejunior007.gamehousefamily.repository.GameRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class GameService {
 
@@ -13,10 +15,12 @@ public class GameService {
         this.repository = repository;
     }
 
-    public Game getGame(){
+    public Game cadastrar(Game game) {
+        return repository.save(game);
+    }
 
-        Game REMATCH = new Game("2138720", "REMATCH");
+    public List<Game> listar() {
 
-        return repository.save(REMATCH);
+        return repository.findAll();
     }
 }
