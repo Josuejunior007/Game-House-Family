@@ -3,6 +3,9 @@ package io.github.josuejunior007.gamehousefamily.service;
 import io.github.josuejunior007.gamehousefamily.model.Game;
 import io.github.josuejunior007.gamehousefamily.repository.GameRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
+
+import java.util.Optional;
 
 import java.util.List;
 
@@ -22,5 +25,12 @@ public class GameService {
     public List<Game> listar() {
 
         return repository.findAll();
+    }
+
+    public Optional<Game> buscarPorID( Integer id) {
+
+        Optional<Game> game = repository.findById(id);
+
+        return game;
     }
 }

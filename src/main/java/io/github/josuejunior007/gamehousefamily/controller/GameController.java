@@ -2,10 +2,9 @@ package io.github.josuejunior007.gamehousefamily.controller;
 
 import io.github.josuejunior007.gamehousefamily.model.Game;
 import io.github.josuejunior007.gamehousefamily.service.GameService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import java.util.Optional;
 
 import java.util.List;
 
@@ -26,6 +25,18 @@ public class GameController {
     @GetMapping("/games")
     public List<Game> listar() {
         return  gameService.listar();
+    }
+    @GetMapping("/games/{id}")
+    public ResponseEntity<Game> buscar(@PathVariable Integer id) {
+
+        Optional<Game> game = gameService.buscarPorID(id);
+
+        if (game.isPresent()) {
+            return ResponseEntity.ok(game.get());
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+
     }
 
 }
