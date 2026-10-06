@@ -29,4 +29,7 @@ public class Game {
     public String getSteamAppId() {
             return steamAppId;
     }
+    public void atualizarNome(String newName){
+        this.name = newName;
+    }
 }

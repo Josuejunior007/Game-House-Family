@@ -1,5 +1,6 @@
 package io.github.josuejunior007.gamehousefamily.service;
 
+import io.github.josuejunior007.gamehousefamily.dto.GameUpdateRequest;
 import io.github.josuejunior007.gamehousefamily.model.Game;
 import io.github.josuejunior007.gamehousefamily.repository.GameRepository;
 import org.springframework.stereotype.Service;
@@ -32,5 +33,19 @@ public class GameService {
         Optional<Game> game = repository.findById(id);
 
         return game;
+    }
+    public Optional<Game> atualizar(Integer id, GameUpdateRequest request) {
+        Optional<Game> game = repository.findById(id);
+
+        if (game.isPresent()) {
+
+            Game gameEncontrado = game.get();
+
+            gameEncontrado.atualizarNome(request.name());
+
+            repository.save(gameEncontrado);
+            return Optional.of(gameEncontrado);
+        }
+        return Optional.empty();
     }
 }
