@@ -1,0 +1,54 @@
+### Listar todos os jogos
+GET http://localhost:8081/games
+
+### Buscar jogo por ID
+GET http://localhost:8081/games/52
+
+### Cadastrar jogo
+POST http://localhost:8081/games
+Content-Type: application/json
+
+{
+  "steamAppId": "COLOQUE_OUTRO_APP_ID",
+  "name": "COLOQUE_OUTRO_JOGO"
+}
+
+### Atualizar nome
+PATCH http://localhost:8081/games/52
+Content-Type: application/json
+
+{
+  "name": "Forza Horizon VI"
+}
+
+### Testar busca inexistente
+GET http://localhost:8081/games/999999
+
+### Testar atualização inexistente
+PATCH http://localhost:8081/games/999999
+Content-Type: application/json
+
+{
+  "name": "Teste"
+}
+
+<> 2026-10-06T112756.200.json
+<> 2026-10-06T093253.200.json
+<> 2026-10-06T093247.200.json
+<> 2026-10-06T093236.200.json
+<> 2026-10-05T114110.404.json
+<> 2026-10-05T114018.404.json
+<> 2026-10-05T113940.200.json
+<> 2026-10-05T113935.200.json
+<> 2026-10-05T113931.200.json
+<> 2026-10-05T113918.200.json
+<> 2026-10-05T110956.404.json
+<> 2026-10-05T110942.200.json
+<> 2026-10-05T110938.200.json
+<> 2026-10-05T110925.200.json
+<> 2026-10-05T110908.200.json
+<> 2026-10-05T110857.404.json
+<> 2026-10-05T110844.200.json
+<> 2026-10-05T110837.200.json
+<> 2026-10-05T110829.200.json
+<> 2026-10-05T093218.200.json
