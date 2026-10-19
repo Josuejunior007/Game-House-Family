@@ -1,5 +1,6 @@
 package io.github.josuejunior007.gamehousefamily.controller;
 
+import io.github.josuejunior007.gamehousefamily.dto.GameCreateRequest;
 import io.github.josuejunior007.gamehousefamily.dto.GameUpdateRequest;
 import io.github.josuejunior007.gamehousefamily.model.Game;
 import io.github.josuejunior007.gamehousefamily.service.GameService;
@@ -21,8 +22,8 @@ public class GameController {
 
 
     @PostMapping("/games")
-    public Game cadastrar(@RequestBody Game game) {
-        return gameService.cadastrar(game);
+    public Game cadastrar(@RequestBody GameCreateRequest request) {
+        return gameService.cadastrar(request);
     }
     @GetMapping("/games")
     public List<Game> listar() {
@@ -46,5 +47,4 @@ public class GameController {
         }
         return ResponseEntity.notFound().build();
     }
-
 }
