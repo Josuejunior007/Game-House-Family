@@ -3,6 +3,8 @@ package io.github.josuejunior007.gamehousefamily.service;
 import io.github.josuejunior007.gamehousefamily.dto.GameCreateRequest;
 import io.github.josuejunior007.gamehousefamily.dto.GameUpdateRequest;
 import io.github.josuejunior007.gamehousefamily.dto.SteamGameData;
+import io.github.josuejunior007.gamehousefamily.exception.GameJaCadastradoException;
+import io.github.josuejunior007.gamehousefamily.exception.GameNaoEncontradoNaSteamException;
 import io.github.josuejunior007.gamehousefamily.model.Game;
 import io.github.josuejunior007.gamehousefamily.repository.GameRepository;
 import org.springframework.stereotype.Service;
@@ -26,11 +28,11 @@ public class GameService {
     public Game cadastrar(GameCreateRequest request) {
 
         if (repository.existsBySteamAppId(request.steamAppId())) {
-            throw new RuntimeException("Jogo já cadastrado"); // TODO: virar 409
+            throw new GameJaCadastradoException("Jogo já cadastrado");
         }
 
         SteamGameData dadosSteam = steamService.buscarJogo(request.steamAppId())
-                .orElseThrow(() -> new RuntimeException("Jogo não encontrado na Steam")); // TODO: virar 404
+                .orElseThrow(() -> new GameNaoEncontradoNaSteamException("Jogo não foi encontrado"));
 
         Game game = new Game(request.steamAppId(), dadosSteam.name());
 

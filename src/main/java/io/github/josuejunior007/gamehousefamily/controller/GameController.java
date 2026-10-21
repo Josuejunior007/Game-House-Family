@@ -4,6 +4,7 @@ import io.github.josuejunior007.gamehousefamily.dto.GameCreateRequest;
 import io.github.josuejunior007.gamehousefamily.dto.GameUpdateRequest;
 import io.github.josuejunior007.gamehousefamily.model.Game;
 import io.github.josuejunior007.gamehousefamily.service.GameService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
@@ -22,8 +23,8 @@ public class GameController {
 
 
     @PostMapping("/games")
-    public Game cadastrar(@RequestBody GameCreateRequest request) {
-        return gameService.cadastrar(request);
+    public ResponseEntity<Game> cadastrar(@RequestBody GameCreateRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(gameService.cadastrar(request));
     }
     @GetMapping("/games")
     public List<Game> listar() {
