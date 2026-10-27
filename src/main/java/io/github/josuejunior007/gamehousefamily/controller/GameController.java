@@ -1,14 +1,13 @@
 package io.github.josuejunior007.gamehousefamily.controller;
 
 import io.github.josuejunior007.gamehousefamily.dto.GameCreateRequest;
+import io.github.josuejunior007.gamehousefamily.dto.GameResponse;
 import io.github.josuejunior007.gamehousefamily.dto.GameUpdateRequest;
-import io.github.josuejunior007.gamehousefamily.model.Game;
 import io.github.josuejunior007.gamehousefamily.service.GameService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
-import org.springframework.web.bind.annotation.PatchMapping;
 
 import java.util.List;
 
@@ -23,29 +22,29 @@ public class GameController {
 
 
     @PostMapping("/games")
-    public ResponseEntity<Game> cadastrar(@RequestBody GameCreateRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(gameService.cadastrar(request));
+    public ResponseEntity<GameResponse> cadastrar(@RequestBody GameCreateRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(GameResponse.de(gameService.cadastrar(request)));
     }
     @GetMapping("/games")
-    public List<Game> listar() {
-        return  gameService.listar();
+    public List<GameResponse> listar() {
+        List<GameResponse> games = gameService.listar()
+                .stream()
+                .map(game -> GameResponse.de(game))
+                .toList();
+        return games;
     }
     @GetMapping("/games/{id}")
-    public ResponseEntity<Game> buscar(@PathVariable Integer id) {
+    public ResponseEntity<GameResponse> buscar(@PathVariable Integer id) {
 
-        Optional<Game> game = gameService.buscarPorID(id);
+        Optional<GameResponse> resposta = gameService.buscarPorID(id)
+                .map(game -> GameResponse.de(game));
 
-        return ResponseEntity.of(game);
-
+        return ResponseEntity.of(resposta);
     }
     @PatchMapping("/games/{id}")
-    public ResponseEntity<Game> atualizar(@PathVariable Integer id, @RequestBody GameUpdateRequest request) {
-
-        Optional<Game> game =gameService.atualizar(id, request);
-
-        if(game.isPresent()) {
-            return ResponseEntity.ok(game.get());
-        }
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<GameResponse> atualizar(@PathVariable Integer id, @RequestBody GameUpdateRequest request) {
+        Optional<GameResponse> atualizar = gameService.atualizar(id, request)
+                .map(game -> GameResponse.de(game));
+        return ResponseEntity.of(atualizar);
     }
 }

@@ -9,7 +9,7 @@ POST http://localhost:8081/games
 Content-Type: application/json
 
 {
-  "steamAppId": "99999999"
+  "steamAppId": "2050650"
 }
 
 ### Atualizar nome
@@ -17,7 +17,7 @@ PATCH http://localhost:8081/games/52
 Content-Type: application/json
 
 {
-  "name": "Forza Horizon VI"
+  "name": "Forza Horizon 6"
 }
 
 ### Testar busca inexistente
