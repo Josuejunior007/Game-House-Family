@@ -4,6 +4,7 @@ import io.github.josuejunior007.gamehousefamily.dto.GameCreateRequest;
 import io.github.josuejunior007.gamehousefamily.dto.GameResponse;
 import io.github.josuejunior007.gamehousefamily.dto.GameUpdateRequest;
 import io.github.josuejunior007.gamehousefamily.service.GameService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +23,7 @@ public class GameController {
 
 
     @PostMapping("/games")
-    public ResponseEntity<GameResponse> cadastrar(@RequestBody GameCreateRequest request) {
+    public ResponseEntity<GameResponse> cadastrar(@RequestBody @Valid GameCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(GameResponse.de(gameService.cadastrar(request)));
     }
     @GetMapping("/games")
@@ -42,7 +43,7 @@ public class GameController {
         return ResponseEntity.of(resposta);
     }
     @PatchMapping("/games/{id}")
-    public ResponseEntity<GameResponse> atualizar(@PathVariable Integer id, @RequestBody GameUpdateRequest request) {
+    public ResponseEntity<GameResponse> atualizar(@PathVariable Integer id, @RequestBody @Valid GameUpdateRequest request) {
         Optional<GameResponse> atualizar = gameService.atualizar(id, request)
                 .map(game -> GameResponse.de(game));
         return ResponseEntity.of(atualizar);
