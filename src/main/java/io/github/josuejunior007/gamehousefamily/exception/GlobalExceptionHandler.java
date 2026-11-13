@@ -32,5 +32,16 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erros);
     }
-
+    @ExceptionHandler(GameIdNaoEncontradoNoBancoException.class)
+    public ResponseEntity<String> handleGameIdNaoEncontrado(GameIdNaoEncontradoNoBancoException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+    }
+    @ExceptionHandler(UserIdNaoEncontradoNoBancoException.class)
+    public ResponseEntity<String> handleUserIdNaoEncontrado(UserIdNaoEncontradoNoBancoException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+    }
+    @ExceptionHandler(SugestaoAtivaJaExisteException.class)
+    public ResponseEntity<String> handleAtivaJaExisteException(SugestaoAtivaJaExisteException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+    }
 }
