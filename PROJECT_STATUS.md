@@ -6,161 +6,87 @@
 
 **Objetivo:** Sistema para gerenciamento de sugestões e votação de jogos para grupos de Steam/Família Steam.
 
-**Última atualização:** 2026-11-03
+**Última atualização:** 2026-11-20
+
+**Situação:** **MVP funcional de ponta a ponta** — API e front-end prontos, testados contra o banco real e verificados num navegador (desktop e celular). Falta apenas validar o login real da Steam com um navegador (depende de URL pública).
 
 ## Stack Atual
-- Java (pom.xml configurado com 25 - conferir qual versão está instalada)
-- Spring Boot 4.1.1
-- Spring Data JPA
-- spring-boot-starter-validation (Bean Validation)
-- PostgreSQL
-- Supabase
-- Maven
-- IntelliJ IDEA
-- DBeaver (para visualizar o banco)
+- Java 25 (o `pom.xml` compila com `release 25`; antes compilava 17 sem avisar)
+- Spring Boot 4.1.1 (Spring Framework 7, Hibernate 7.4, Tomcat 11)
+- Spring Data JPA, Bean Validation, Jackson
+- PostgreSQL 17 + Supabase
+- JUnit 5 + Mockito (19 testes)
+- Maven Wrapper (`mvnw`)
+- Front-end: React 19 + TypeScript 7 + Vite 8, CSS próprio (sem lib de UI)
 
 ## Arquitetura
-Pacotes:
-- controller
-- dto
-- exception
-- model
-- repository
-- service
+Pacotes: config, controller, dto, exception, model, repository, service.
+- Controller conversa só com o Service; Service orquestra Repository e SteamService; Service contém as regras.
+- DTOs separados das entidades (records). DTOs da Steam espelham o JSON deles e não são expostos.
+- Entidades sem setters: mudanças de estado por métodos com nome de regra de negócio.
+- Front: `api.ts` (cliente tipado) → `auth.tsx` (sessão) → componentes. Estado com hooks, sem lib de estado.
+- Erros da API em um formato único (`ApiError`: `status`, `message`, `fields`).
 
 ## Banco de Dados
-- PostgreSQL hospedado no Supabase, conexão funcionando
-- `spring.jpa.hibernate.ddl-auto=update` (o Hibernate cria/ajusta as tabelas; não renomeia nem apaga colunas)
-- Ids gerados em saltos de 50 (SEQUENCE do Hibernate reserva blocos de 50). Comportamento normal.
-- Tabelas existentes: `game`, `users`, `suggestion`
-- Tabela de usuários se chama `users` porque `user` é palavra reservada no Postgres
+- `spring.jpa.hibernate.ddl-auto=update`
+- Tabelas: `game`, `users`, `suggestion`, `vote`
+- Ids em saltos de 50 (SEQUENCE do Hibernate com pool): normal, **não são sequenciais**
+- `data.sql` cria `ux_suggestion_one_active_per_game` (1 sugestão EM_VOTACAO por jogo) — confirmado no banco
+- `vote` tem unique `uk_vote_user_suggestion (user_id, suggestion_id)` — confirmado no banco
+- Coluna antiga `avatr_url` **já foi removida** (verificado em 2026-11-20)
+- Nova coluna `game.image_url` (capa vinda da Steam). Jogos antigos foram preenchidos e, se ficar nula, o DTO monta a URL antiga como fallback.
+- **Conexões:** o pooler de sessão do Supabase aceita 15 clientes no total; `APP_DB_POOL_SIZE` (padrão 5) evita o erro `EMAXCONNSESSION`
 
-## Entidades (model)
+## Entidades
+- **Game:** id, steamAppId (unique), name, imageUrl
+- **User:** id, steamId (unique), displayName, avatarUrl; criado/atualizado no login
+- **Suggestion:** id, user, game, copies, status, votingDeadline, createdAt. Métodos: votacaoAberta, prazoVencido, aprovar, rejeitar, marcarComoComprada
+- **Vote:** id, user, suggestion, choice, createdAt, updatedAt. Método: alterarEscolha
+- **Enums:** SuggestionStatus (EM_VOTACAO, APROVADA, REJEITADA, COMPRADA), VoteChoice (APOIO, NAO_APOIO)
 
-### Game
-- id, steamAppId (String, unique, not null), name
-- steamAppId é identificador externo da Steam e não deve ser alterado
-- name pode ser atualizado (`atualizarNome`)
+## Regras de negócio
+- RN-04/09: só EM_VOTACAO conta como sugestão ativa; histórico permitido
+- RN-07: copies >= 1; RN-10/11: prazo de 1 a 30 dias
+- RN-12/13: um voto por usuário por sugestão, alterável enquanto aberta
+- RN-14: APOIO > NAO_APOIO aprova; empate ou zero votos rejeita
+- RN-15: criador encerra a qualquer momento; outros só após o prazo; agendador (60 s) encerra as vencidas
+- RN-16: só APROVADA vira COMPRADA; qualquer membro logado pode marcar
+- RN-17: `app.allowed-steam-ids` opcional restringe o login à família
 
-### User
-- id, steamId (String, unique, not null), displayName (not null), avatarUrl (opcional: conta Steam pode não ter foto)
-- Atualização por um único método: `atualizarNomeAvatar`
-- Sem CRUD por enquanto: o usuário vai nascer no login pela Steam
+## Endpoints
+Ver README.md (tabela completa) e requests.http (roteiro de testes).
+Novo: `GET /steam/search?q=` — busca por nome na loja da Steam (o usuário não precisa saber o appId).
 
-### Suggestion
-- id, user (@ManyToOne LAZY), game (@ManyToOne LAZY), copies, status, votingDeadline (Instant), createdAt (Instant)
-- Status inicial é sempre EM_VOTACAO (definido no construtor), createdAt também
-- Só getters (sem setters); mudanças de estado virão por métodos com nome de regra de negócio
+## Tratamento de erros (GlobalExceptionHandler)
+Formato único `{ status, message, fields }` para 400 validação e JSON inválido, 401, 403, 404 (inclusive rota inexistente e corpo vazio), 405, 409, 415, 500 e 502.
+O que foi corrigido: antes o cliente recebia três formatos diferentes (texto puro, mapa de campos e o JSON padrão do Spring sem mensagem).
 
-### SuggestionStatus (enum)
-- EM_VOTACAO, APROVADA, REJEITADA, COMPRADA
-- Salvo como STRING no banco (@Enumerated)
+## Steam
+- `buscarJogo`: appdetails com `cc=br&l=portuguese`; timeouts (5 s conexão / 10 s leitura); falha de rede → 502; resposta nula/`success:false` → 404
+- `buscarJogos` (busca): storesearch com `cc=br&l=portuguese`, filtra `type=app`, limita a 10; usa a miniatura que a Steam devolve
+- `buscarPerfil`: XML do perfil público, com proteção XXE; fallback "Jogador XXXX"
+- Capa: usa `header_image` devolvido pela Steam (o CDN mudou; montar a URL na mão deixava jogos sem capa)
+- Preço em centavos, sob demanda em `GET /games/{id}/price` (não é salvo)
 
-## Decisões de regra de negócio
-- Só **EM_VOTACAO** conta como sugestão ativa: bloqueia nova sugestão do mesmo jogo. APROVADA não bloqueia, mesmo que a compra ainda não tenha saído.
-- Histórico é permitido: o mesmo jogo pode ter várias sugestões encerradas.
-- Quantidade de cópias mínima é 1 (RN-07).
-- Prazo da votação chega na requisição como **duração em dias** (`votingDays`, de 1 a 30, sem horas). O Service calcula `votingDeadline = agora + dias`.
-- `userId` vem no corpo da requisição apenas até o login Steam existir.
+## Front-end
+- `frontend/` (React + TS + Vite): login (Steam + atalho de dev), Sugestões (filtros por status, votar, encerrar, marcar comprada), Catálogo (busca na Steam, adicionar jogo, ver preço, abrir votação), modais, toasts, tema escuro e layout responsivo.
+- Sem roteador: navegação por abas em estado local (suficiente para o escopo actual).
+- Datas chegam em UTC e são formatadas em `America/Sao_Paulo` pelo `Intl` do navegador.
 
-## Repositories
-### GameRepository
-- save(), findAll(), findById()
-- existsBySteamAppId(String)
+## Testes
+- Unitários (Mockito, sem banco): SuggestionTest, SuggestionServiceTest, VoteServiceTest — `19 testes, 0 falhas`
+- Verificação manual automatizada (2026-11-20): ~40 chamadas HTTP contra o Supabase real cobrindo 401/403/404/409/415/201/200, troca de voto, empate → REJEITADA, compra só de APROVADA, logout invalidando sessão, agendador encerrando sugestão vencida, CORS com credenciais
+- Front verificado em navegador headless: login, criar sugestão pelo catálogo (pré-seleção correta), votar, busca real na Steam, modais fechando com Esc, layout de 1300 px e 390 px, zero erro de console
 
-### UserRepository
-- vazio por enquanto (só os métodos do JpaRepository)
-
-### SuggestionRepository
-- existsByGameIdAndStatus(int gameId, SuggestionStatus status): base da regra "uma sugestão ativa por jogo"
-- Lembrete: `exists...` devolve boolean; `find...` devolve objeto/Optional
-
-## Service
-### GameService
-Dependências: GameRepository e SteamService (injetados pelo construtor).
-
-- cadastrar(GameCreateRequest):
-  1. verifica no banco se o steamAppId já existe (GameJaCadastradoException)
-  2. busca o jogo na Steam via SteamService (GameNaoEncontradoNaSteamException se não existir)
-  3. cria o Game com o nome vindo da Steam
-  4. salva no banco
-- listar()
-- buscarPorID() → Optional<Game>
-- atualizar() → Optional<Game>
-
-### SteamService
-- Usa `RestClient` com base `https://store.steampowered.com`
-- `buscarJogo(String appId)` retorna `Optional<SteamGameData>`
-- Chama `/api/appdetails?appids={id}&cc=br&l=portuguese` (preço em BRL, texto em português)
-- Resposta vem embrulhada por uma chave igual ao AppID (`Map<String, SteamAppResponse>`)
-- `success: false` ou chave ausente → `Optional.empty()`
-- Preço vem em **centavos** (4760 = R$ 47,60); jogos gratuitos têm `price_overview` null
-
-## Controller
-### GameController
-- POST /games → 201 com `GameResponse` (409 se já cadastrado, 404 se não existe na Steam, 400 se steamAppId em branco)
-- GET /games → lista de `GameResponse`
-- GET /games/{id} → 200 ou 404 (Optional.map + ResponseEntity.of)
-- PATCH /games/{id} → atualiza só o nome; 200, 404 ou 400 (name em branco / ausente)
-
-### HomeController
-- GET / → "Game House Family"
-
-## Tratamento de erros
-`GlobalExceptionHandler` (@RestControllerAdvice):
-- GameJaCadastradoException → 409
-- GameNaoEncontradoNaSteamException → 404
-- MethodArgumentNotValidException → 400 com mapa campo → mensagem
-
-## DTOs
-### Internos
-- GameCreateRequest(@NotBlank steamAppId)
-- GameUpdateRequest(@NotBlank name)
-- GameResponse(id, steamAppId, name) com método estático `de(Game)`
-- SuggestionCreateRequest: **em andamento** (ver Próximo Passo)
-
-### Steam (espelham o JSON deles e não são expostos pela nossa API)
-- SteamPriceData(currency, initial, finalPrice, discountPercent)
-- SteamGameData(name, steamAppId, priceOverview)
-- SteamAppResponse(success, data)
-
-## Arquivo de Testes
-- `requests.http` versionado no projeto. Os links `<> 2026-...json` no final são histórico do IntelliJ e podem ser apagados.
-
-## Próximo Passo
-Criar a sugestão (fluxo completo):
-1. Terminar o `SuggestionCreateRequest` (record): gameId e userId como `Integer` com @NotNull, copies com @NotNull + @Min(1), votingDays com @NotNull + @Min(1) + @Max(30)
-2. Criar o `SuggestionResponse` (DTO de saída)
-3. Criar exceções: jogo/usuário não encontrado e já existe sugestão ativa para o jogo (409)
-4. `SuggestionService.criar`: buscar User e Game, checar `existsByGameIdAndStatus(..., EM_VOTACAO)`, calcular o prazo, salvar
-5. `SuggestionController`: POST /suggestions devolvendo 201
-6. Testar no requests.http
-
-## Pendências Técnicas
-- Conferir o nome da coluna do avatar em `User` (`@Column(name = "avatr_url")` está com erro de digitação)
-- Conferir a versão do Java (pom diz 25, documentação antiga dizia 21)
-- Acento na mensagem "Jogo já cadastrado" (conferir o resultado no teste)
-- Regra "uma sugestão ativa por jogo" também no banco (índice único parcial no Postgres), além do Service
-- SteamService: tratar falha de rede/timeout da Steam e resposta nula
-- Estratégia de imagens e de preços (persistir ou consultar sob demanda)
-- Avaliar DELETE
-- Preencher o README.md
+## Pendências
+- Testar o **login real da Steam** com navegador (precisa de `APP_BASE_URL` público, ou `http://localhost:8081` com o navegador na mesma máquina)
+- Rodar `mvn test` e `npm run build` na máquina de outra pessoa (validar o wrapper e o Node)
+- Limpar o catálogo de teste: há 3 jogos chamados "Portal 2" (appIds 2138720, 2288340, 620) herdados dos testes iniciais. Sem DELETE na API, corrigir no DBeaver
+- Commitar o trabalho (há muitas alterações pendentes no Git)
+- Se for publicar: servir o `dist/` do front na mesma origem da API (ou ajustar `SameSite`/CORS) e configurar `APP_DEV_LOGIN_ENABLED=false`
 
 ## Futuro
-- Votos (APOIO / NAO_APOIO, voto alterável enquanto a votação está aberta, um voto por usuário por sugestão)
-- Encerrar votação (aprovar/rejeitar) e fluxo pendente de compra → comprado
-- Login pela Steam (OpenID) e usuários da família
-- Comentários nas sugestões, compras parciais, cargos e permissões, quórum configurável
-
-## Decisões Arquiteturais
-- Controller não acessa Repository diretamente.
-- Controller conversa apenas com o Service; o Service orquestra Repository e SteamService.
-- Service contém regras de negócio.
-- A Steam é uma API externa (chamada HTTP no SteamService), não um repository.
-- DTOs separados das entidades; uso de record para DTOs.
-- DTOs da Steam espelham o formato deles e não devem ser expostos pela nossa API.
-- steamAppId tratado como String, identificador externo.
-- Checagens baratas (banco) antes das caras (chamada HTTP à Steam).
-- Entidades sem setters públicos: mudanças por métodos com nome de regra de negócio.
-- requests.http mantido no repositório.
-- Um commit por etapa concluída, mensagem em inglês.
+- DELETE de jogo (com bloqueio quando houver sugestões) e de sugestão
+- Comentários nas sugestões, compras parciais (quantidade comprada/restante)
+- Cargos e permissões, quórum configurável
+- Paginação e cache de preços (a Steam aceita vários appIds por chamada)

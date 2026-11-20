@@ -12,7 +12,7 @@ public class User {
     private String steamId;
     @Column(nullable = false, name = "display_name")
     private String displayName;
-    @Column(name = "avatr_url")
+    @Column(name = "avatar_url")
     private String avatarUrl;
 
     public User(String steamId, String DisplayName, String avatarUrl) {

@@ -28,3 +28,6 @@ target/
 
 # Intellij IDEA
 .idea/
+
+# Variáveis de ambiente locais
+.env

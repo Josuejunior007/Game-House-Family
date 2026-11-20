@@ -1,54 +1,200 @@
-### Listar todos os jogos
+### ============================================================
+### Pré-requisito: rodar com APP_DEV_LOGIN_ENABLED=true (login falso, sem Steam)
+### O IntelliJ guarda o cookie de sessão entre as requisições.
+### Toda resposta de erro vem como { "status": ..., "message": ..., "fields": ... }
+### ============================================================
+
+### 0) Sem login -> 401
 GET http://localhost:8081/games
 
-### Buscar jogo por ID
-GET http://localhost:8081/games/52
+### 1) Login falso como Ana (cria o usuário se não existir)
+POST http://localhost:8081/auth/dev-login
+Content-Type: application/json
 
-### Cadastrar jogo
+{
+  "steamId": "76561198000000001",
+  "displayName": "Ana"
+}
+
+### Quem sou eu?
+GET http://localhost:8081/auth/me
+
+### ----------------------- BUSCA NA STEAM ----------------------
+
+### Buscar jogo por nome (para não precisar do appId)
+GET http://localhost:8081/steam/search?q=elden%20ring
+
+### Termo vazio devolve lista vazia
+GET http://localhost:8081/steam/search?q=
+
+### Sem o parâmetro q -> 400
+GET http://localhost:8081/steam/search
+
+### ----------------------- JOGOS ------------------------------
+
+### Listar todos os jogos (ordem alfabética; guarda o id do primeiro em {{gameId}})
+GET http://localhost:8081/games
+
+> {% client.global.set("gameId", response.body[0].id); %}
+
+### Cadastrar jogo (Portal 2) e guardar o id em {{gameId}}
 POST http://localhost:8081/games
 Content-Type: application/json
 
 {
-  "steamAppId": "2050650"
+  "steamAppId": "620"
 }
+
+> {% if (response.status === 201) { client.global.set("gameId", response.body.id); } %}
+
+### Buscar jogo por ID
+GET http://localhost:8081/games/{{gameId}}
+
+### Preço atual na Steam (centavos; available=false para grátis/indisponível)
+GET http://localhost:8081/games/{{gameId}}/price
 
 ### Atualizar nome
-PATCH http://localhost:8081/games/52
+PATCH http://localhost:8081/games/{{gameId}}
 Content-Type: application/json
 
 {
-  "name": "Forza Horizon 6"
+  "name": "Portal 2"
 }
 
-### Testar busca inexistente
+### Nome com mais de 255 caracteres -> 400 com fields.name
+PATCH http://localhost:8081/games/{{gameId}}
+Content-Type: application/json
+
+{
+  "name": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}
+
+### Busca inexistente -> 404 com mensagem no corpo
 GET http://localhost:8081/games/999999
 
-### Testar atualização inexistente
-PATCH http://localhost:8081/games/999999
+### ID que não é número -> 400
+GET http://localhost:8081/games/abc
+
+### ----------------------- SUGESTÕES --------------------------
+
+### Criar sugestão (2 cópias, votação de 7 dias) e guardar o id em {{suggestionId}}
+POST http://localhost:8081/suggestions
 Content-Type: application/json
 
 {
-  "name": "Teste"
+  "gameId": {{gameId}},
+  "copies": 2,
+  "votingDays": 7
 }
 
+> {% if (response.status === 201) { client.global.set("suggestionId", response.body.id); } %}
 
-<> 2026-10-06T112756.200.json
-<> 2026-10-06T093253.200.json
-<> 2026-10-06T093247.200.json
-<> 2026-10-06T093236.200.json
-<> 2026-10-05T114110.404.json
-<> 2026-10-05T114018.404.json
-<> 2026-10-05T113940.200.json
-<> 2026-10-05T113935.200.json
-<> 2026-10-05T113931.200.json
-<> 2026-10-05T113918.200.json
-<> 2026-10-05T110956.404.json
-<> 2026-10-05T110942.200.json
-<> 2026-10-05T110938.200.json
-<> 2026-10-05T110925.200.json
-<> 2026-10-05T110908.200.json
-<> 2026-10-05T110857.404.json
-<> 2026-10-05T110844.200.json
-<> 2026-10-05T110837.200.json
-<> 2026-10-05T110829.200.json
-<> 2026-10-05T093218.200.json
+### Segunda sugestão ativa do mesmo jogo -> 409
+POST http://localhost:8081/suggestions
+Content-Type: application/json
+
+{
+  "gameId": {{gameId}},
+  "copies": 1,
+  "votingDays": 7
+}
+
+### Validação: copies = 0 e votingDays = 31 -> 400 (dois campos em "fields")
+POST http://localhost:8081/suggestions
+Content-Type: application/json
+
+{
+  "gameId": {{gameId}},
+  "copies": 0,
+  "votingDays": 31
+}
+
+### Listar sugestões (opcional: ?status=EM_VOTACAO | APROVADA | REJEITADA | COMPRADA)
+GET http://localhost:8081/suggestions?status=EM_VOTACAO
+
+### Detalhe da sugestão (com placar e meu voto)
+GET http://localhost:8081/suggestions/{{suggestionId}}
+
+### ----------------------- VOTOS ------------------------------
+
+### Ana vota APOIO
+PUT http://localhost:8081/suggestions/{{suggestionId}}/vote
+Content-Type: application/json
+
+{
+  "choice": "APOIO"
+}
+
+### Login falso como Beto
+POST http://localhost:8081/auth/dev-login
+Content-Type: application/json
+
+{
+  "steamId": "76561198000000002",
+  "displayName": "Beto"
+}
+
+### Beto vota NAO_APOIO
+PUT http://localhost:8081/suggestions/{{suggestionId}}/vote
+Content-Type: application/json
+
+{
+  "choice": "NAO_APOIO"
+}
+
+### Beto muda de ideia: APOIO (continua 1 voto dele só)
+PUT http://localhost:8081/suggestions/{{suggestionId}}/vote
+Content-Type: application/json
+
+{
+  "choice": "APOIO"
+}
+
+### Valor inválido -> 400
+PUT http://localhost:8081/suggestions/{{suggestionId}}/vote
+Content-Type: application/json
+
+{
+  "choice": "TALVEZ"
+}
+
+### Beto tenta encerrar antes do prazo (não é o criador) -> 403
+POST http://localhost:8081/suggestions/{{suggestionId}}/close
+
+### ----------------------- ENCERRAR / COMPRAR -----------------
+
+### Volta a ser a Ana (criadora)
+POST http://localhost:8081/auth/dev-login
+Content-Type: application/json
+
+{
+  "steamId": "76561198000000001",
+  "displayName": "Ana"
+}
+
+### Ana encerra a votação: 2 APOIO x 0 -> APROVADA
+POST http://localhost:8081/suggestions/{{suggestionId}}/close
+
+### Votar depois de encerrada -> 409
+PUT http://localhost:8081/suggestions/{{suggestionId}}/vote
+Content-Type: application/json
+
+{
+  "choice": "NAO_APOIO"
+}
+
+### Marcar como comprada (só funciona se estiver APROVADA)
+POST http://localhost:8081/suggestions/{{suggestionId}}/purchase
+
+### Comprar de novo -> 409
+POST http://localhost:8081/suggestions/{{suggestionId}}/purchase
+
+### Rota inexistente (logado) -> 404 com mensagem
+GET http://localhost:8081/rota-inexistente
+
+### Logout
+POST http://localhost:8081/auth/logout
+
+### ----------------------- LOGIN REAL (abra no navegador) -----
+### http://localhost:8081/auth/steam/login
+### Precisa de APP_BASE_URL coerente com a URL onde a API está acessível
