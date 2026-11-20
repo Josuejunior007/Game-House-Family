@@ -28,7 +28,7 @@ No celular a mesma interface vira uma coluna: ![Mobile](docs/screenshots/mobile.
 | `SUPABASE_DB_USERNAME` | sim | usuário do banco |
 | `SUPABASE_DB_PASSWORD` | sim | senha do banco |
 | `APP_BASE_URL` | não | URL pública da API (padrão `http://localhost:8081`). Usada no retorno do login Steam |
-| `APP_FRONTEND_URL` | não | URL do front-end: libera CORS e recebe o redirect pós-login (use `http://localhost:5173` em dev) |
+| `APP_FRONTEND_URL` | não | URL do front-end: libera o CORS e recebe o usuário depois do login Steam (padrão `http://localhost:5173`). **Em produção, defina a URL real** |
 | `APP_ALLOWED_STEAM_IDS` | não | SteamID64 da família, separados por vírgula. Vazio = qualquer conta entra |
 | `APP_DEV_LOGIN_ENABLED` | não | `true` liga `POST /auth/dev-login` (login falso para testes). **Nunca em produção** |
 | `APP_DB_POOL_SIZE` | não | Conexões por instância (padrão `5`). Veja *Conexões* abaixo |
@@ -60,11 +60,11 @@ npm run build    # gera dist/ para publicar
 
 O front fala com a API pela variável `VITE_API_URL` (padrão `http://localhost:8081`). Veja `frontend/.env.example`.
 
-**Para o login (inclusive o falso) funcionar, suba a API com `APP_FRONTEND_URL=http://localhost:5173`** — é isso que libera o CORS e manda o usuário de volta para o front depois do login Steam.
+**Em desenvolvimento não precisa configurar nada:** a API já libera CORS para `http://localhost:5173` (e `127.0.0.1:5173`) e devolve o usuário para lá depois do login Steam. Em produção, defina `APP_FRONTEND_URL` com a URL real do front — senão o CORS e o retorno do login vão apontar para o endereço local.
 
 ## Login
 
-- **Steam (OpenID 2.0):** no front, o botão "Entrar com a Steam" abre `GET /auth/steam/login`. A Steam autentica e volta em `/auth/steam/callback`, que cria/atualiza o usuário e abre uma sessão (cookie `HttpOnly`, `SameSite=Lax`). Nome e avatar vêm do perfil público.
+- **Steam (OpenID 2.0):** no front, o botão "Entrar com a Steam" abre `GET /auth/steam/login`. A Steam autentica e volta em `/auth/steam/callback`, que cria/atualiza o usuário, abre uma sessão (cookie `HttpOnly`, `SameSite=Lax`) e **redireciona para `APP_FRONTEND_URL`**. Nome e avatar vêm do perfil público; se o perfil não puder ser lido, o login continua com o nome "Jogador XXXX" e o motivo vai para o log.
 - **Desenvolvimento:** com `APP_DEV_LOGIN_ENABLED=true`, `POST /auth/dev-login` com `{ "steamId": "...", "displayName": "..." }`. O front mostra esse atalho automaticamente em modo de desenvolvimento.
 
 Todas as rotas, exceto `/`, `/error` e `/auth/steam/*`, exigem sessão (senão **401**).

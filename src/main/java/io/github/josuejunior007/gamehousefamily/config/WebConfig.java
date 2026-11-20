@@ -12,7 +12,7 @@ public class WebConfig implements WebMvcConfigurer {
     private final String frontendUrl;
 
     public WebConfig(@Value("${app.frontend-url:}") String frontendUrl) {
-        this.frontendUrl = frontendUrl;
+        this.frontendUrl = FrontendUrl.resolver(frontendUrl);
     }
 
     @Override
@@ -24,11 +24,23 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        if (!frontendUrl.isBlank()) {
-            registry.addMapping("/**")
-                    .allowedOrigins(frontendUrl)
-                    .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-                    .allowCredentials(true);
+        registry.addMapping("/**")
+                .allowedOrigins(origensPermitidas())
+                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+                .allowCredentials(true);
+    }
+
+    /**
+     * Para o navegador, "localhost" e "127.0.0.1" são origens diferentes — liberar as duas evita
+     * o CORS recusar o front só porque alguém abriu o atalho com o outro nome.
+     */
+    private String[] origensPermitidas() {
+        if (frontendUrl.contains("//localhost:")) {
+            return new String[] { frontendUrl, frontendUrl.replace("//localhost:", "//127.0.0.1:") };
         }
+        if (frontendUrl.contains("//127.0.0.1:")) {
+            return new String[] { frontendUrl, frontendUrl.replace("//127.0.0.1:", "//localhost:") };
+        }
+        return new String[] { frontendUrl };
     }
 }

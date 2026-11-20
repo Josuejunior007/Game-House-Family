@@ -79,11 +79,12 @@ O que foi corrigido: antes o cliente recebia três formatos diferentes (texto pu
 - Front verificado em navegador headless: login, criar sugestão pelo catálogo (pré-seleção correta), votar, busca real na Steam, modais fechando com Esc, layout de 1300 px e 390 px, zero erro de console
 
 ## Pendências
-- Testar o **login real da Steam** com navegador (precisa de `APP_BASE_URL` público, ou `http://localhost:8081` com o navegador na mesma máquina)
-- Rodar `mvn test` e `npm run build` na máquina de outra pessoa (validar o wrapper e o Node)
-- Limpar o catálogo de teste: há 3 jogos chamados "Portal 2" (appIds 2138720, 2288340, 620) herdados dos testes iniciais. Sem DELETE na API, corrigir no DBeaver
-- Commitar o trabalho (há muitas alterações pendentes no Git)
-- Se for publicar: servir o `dist/` do front na mesma origem da API (ou ajustar `SameSite`/CORS) e configurar `APP_DEV_LOGIN_ENABLED=false`
+- **Login real da Steam: validado em 2026-11-20** com a conta do Josué (`steamId 76561199343404894`): o OpenID foi confirmado pela Steam (`check_authentication`), o usuário foi criado e a sessão aberta. O que falhava era o pós-login (CORS desligado e callback devolvendo JSON em vez de redirecionar) — corrigido.
+  - Falta observar o `buscarPerfil` com perfil privado: hoje cai no nome "Jogador XXXX" e registra um WARN no log (era silencioso).
+- Definir `APP_ALLOWED_STEAM_IDS` antes de expor a API na internet: vazio = qualquer conta Steam entra (RN-17)
+- Rodar `mvn test` e `npm run build` em outra máquina (validar wrapper e Node)
+- Se for publicar: servir o `dist/` do front na mesma origem da API (ou ajustar `SameSite`/CORS), definir `APP_FRONTEND_URL` e `APP_DEV_LOGIN_ENABLED=false`
+- Commitar as alterações do pós-login (erro de CORS, `FrontendUrl`, log do perfil, banner de conexão no front)
 
 ## Futuro
 - DELETE de jogo (com bloqueio quando houver sugestões) e de sugestão

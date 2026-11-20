@@ -8,6 +8,8 @@ import io.github.josuejunior007.gamehousefamily.dto.SteamSearchResponse;
 import io.github.josuejunior007.gamehousefamily.dto.SteamSearchResult;
 import io.github.josuejunior007.gamehousefamily.exception.SteamIndisponivelException;
 import org.springframework.core.ParameterizedTypeReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -26,6 +28,8 @@ import java.util.Optional;
 
 @Service
 public class SteamService {
+
+    private static final Logger log = LoggerFactory.getLogger(SteamService.class);
 
     private final RestClient restClient = SteamHttpClients.criar("https://store.steampowered.com");
     private final RestClient comunidadeClient = SteamHttpClients.criar("https://steamcommunity.com");
@@ -100,16 +104,19 @@ public class SteamService {
 
     /**
      * Busca nome e avatar no perfil público (XML), sem precisar de chave de API.
-     * Se der qualquer problema (perfil privado, Steam fora), devolve um nome genérico: o login não deve falhar por isso.
+     * Se der qualquer problema (perfil privado, Steam fora, resposta vazia), devolve um nome
+     * genérico: o login não deve falhar por isso. O motivo fica no log, para não virar mistério.
      */
     public SteamPerfil buscarPerfil(String steamId) {
         String padrao = "Jogador " + steamId.substring(steamId.length() - 4);
         try {
-            String xml = comunidadeClient.get()
-                    .uri("/profiles/{id}?xml=1", steamId)
-                    .retrieve()
-                    .body(String.class);
+            String xml = lerPerfilXml(steamId);
             if (xml == null || xml.isBlank()) {
+                // Uma segunda chance: falha de rede pontual não deve custar o nome do usuário.
+                xml = lerPerfilXml(steamId);
+            }
+            if (xml == null || xml.isBlank()) {
+                log.warn("Steam devolveu perfil vazio para {}; usando o nome padrão", steamId);
                 return new SteamPerfil(padrao, null);
             }
 
@@ -121,10 +128,22 @@ public class SteamService {
 
             String nome = textoDoNo(doc, "steamID");
             String avatar = textoDoNo(doc, "avatarFull");
+            if (nome == null) {
+                log.warn("Perfil {} da Steam veio sem <steamID> (perfil privado?); usando o nome padrão", steamId);
+            }
             return new SteamPerfil(nome != null ? nome : padrao, avatar);
         } catch (RestClientException | ParserConfigurationException | SAXException | IOException e) {
+            log.warn("Não foi possível ler o perfil {} na Steam ({}: {}); usando o nome padrão",
+                    steamId, e.getClass().getSimpleName(), e.getMessage());
             return new SteamPerfil(padrao, null);
         }
+    }
+
+    private String lerPerfilXml(String steamId) {
+        return comunidadeClient.get()
+                .uri("/profiles/{id}?xml=1", steamId)
+                .retrieve()
+                .body(String.class);
     }
 
     private String textoDoNo(Document doc, String tag) {

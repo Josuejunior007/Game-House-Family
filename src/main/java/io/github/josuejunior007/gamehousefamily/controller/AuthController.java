@@ -1,6 +1,7 @@
 package io.github.josuejunior007.gamehousefamily.controller;
 
 import io.github.josuejunior007.gamehousefamily.config.AuthInterceptor;
+import io.github.josuejunior007.gamehousefamily.config.FrontendUrl;
 import io.github.josuejunior007.gamehousefamily.config.SessaoUsuario;
 import io.github.josuejunior007.gamehousefamily.dto.UserResponse;
 import io.github.josuejunior007.gamehousefamily.exception.UserIdNaoEncontradoNoBancoException;
@@ -30,7 +31,7 @@ public class AuthController {
                           @Value("${app.frontend-url:}") String frontendUrl) {
         this.openIdService = openIdService;
         this.userService = userService;
-        this.frontendUrl = frontendUrl;
+        this.frontendUrl = FrontendUrl.resolver(frontendUrl);
     }
 
     @GetMapping("/auth/steam/login")
@@ -38,16 +39,18 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(openIdService.urlDeLogin())).build();
     }
 
+    /**
+     * Retorno da Steam: valida o OpenID, cria/atualiza o usuário, abre a sessão e devolve o
+     * usuário para o front-end. Devolver JSON aqui deixava o navegador parado numa tela de JSON,
+     * dando a impressão de que o login tinha falhado.
+     */
     @GetMapping("/auth/steam/callback")
-    public ResponseEntity<UserResponse> callback(HttpServletRequest request) {
+    public ResponseEntity<Void> callback(HttpServletRequest request) {
         String steamId = openIdService.validar(request.getParameterMap());
         User user = userService.entrarComSteam(steamId);
         SessaoUsuario.iniciar(request, user.getId());
 
-        if (!frontendUrl.isBlank()) { // com front-end: volta para ele; sem: devolve o usuário em JSON
-            return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(frontendUrl)).build();
-        }
-        return ResponseEntity.ok(UserResponse.de(user));
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(frontendUrl)).build();
     }
 
     @GetMapping("/auth/me")

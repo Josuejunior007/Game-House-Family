@@ -835,6 +835,25 @@ code {
   margin-bottom: 16px;
 }
 
+.alerta--bloco {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  text-align: left;
+  font-size: 0.82rem;
+  margin-bottom: 0;
+}
+
+.alerta--bloco strong {
+  font-size: 0.86rem;
+}
+
+.alerta__dica {
+  color: #f0b8c2;
+  font-size: 0.76rem;
+}
+
 .vazio {
   display: flex;
   flex-direction: column;

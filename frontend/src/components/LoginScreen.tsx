@@ -10,7 +10,7 @@ const CONTAS_DEMO = [
 ]
 
 export function LoginScreen() {
-  const { entrarComSteam, entrarDev } = useAuth()
+  const { entrarComSteam, entrarDev, erroConexao } = useAuth()
   const toast = useToast()
   const [steamId, setSteamId] = useState(CONTAS_DEMO[0].steamId)
   const [nome, setNome] = useState(CONTAS_DEMO[0].nome)
@@ -39,6 +39,16 @@ export function LoginScreen() {
         <p className="login__subtitulo">
           Alguém sugere um jogo, a família vota e, se a maioria apoiar, fica combinado quem compra. Simples assim.
         </p>
+
+        {erroConexao && (
+          <div className="alerta alerta--erro alerta--bloco" role="alert">
+            <strong>Não consegui falar com a API.</strong>
+            <span>{erroConexao}</span>
+            <span className="alerta__dica">
+              Confira se a API está rodando e se o CORS libera esta origem (<code>APP_FRONTEND_URL</code> na API).
+            </span>
+          </div>
+        )}
 
         <button type="button" className="botao botao--steam botao--largo" onClick={entrarComSteam}>
           <IconeSteam size={20} />
