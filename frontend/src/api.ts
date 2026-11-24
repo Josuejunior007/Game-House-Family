@@ -1,7 +1,9 @@
 import type {
+  Family,
+  FamilyInvite,
   Game,
   GamePrice,
-  SteamSearchResult,
+  GameSearchItem,
   Suggestion,
   SuggestionCreate,
   SuggestionStatus,
@@ -76,28 +78,54 @@ export const api = {
 
   me: () => request<User>('/auth/me'),
 
-  devLogin: (steamId: string, displayName: string) =>
-    request<User>('/auth/dev-login', { method: 'POST', body: json({ steamId, displayName }) }),
-
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
+
+  // ---------- família ----------
+
+  /** 204 (sem corpo) quando a pessoa ainda não está em uma família. */
+  minhaFamilia: async () => (await request<Family | undefined>('/family')) ?? null,
+
+  criarFamilia: (name: string) => request<Family>('/family', { method: 'POST', body: json({ name }) }),
+
+  excluirFamilia: () => request<void>('/family', { method: 'DELETE' }),
+
+  sairDaFamilia: () => request<void>('/family/leave', { method: 'POST' }),
+
+  convidar: (steamId: string) =>
+    request<FamilyInvite>('/family/invites', { method: 'POST', body: json({ steamId }) }),
+
+  convitesEnviados: () => request<FamilyInvite[]>('/family/invites'),
+
+  cancelarConvite: (id: number) => request<void>(`/family/invites/${id}`, { method: 'DELETE' }),
+
+  removerMembro: (userId: number) => request<void>(`/family/members/${userId}`, { method: 'DELETE' }),
+
+  meusConvites: () => request<FamilyInvite[]>('/invites'),
+
+  aceitarConvite: (id: number) => request<Family>(`/invites/${id}/accept`, { method: 'POST' }),
+
+  recusarConvite: (id: number) => request<void>(`/invites/${id}/decline`, { method: 'POST' }),
+
+  // ---------- jogos ----------
 
   listarJogos: () => request<Game[]>('/games'),
 
   buscarJogo: (id: number) => request<Game>(`/games/${id}`),
 
-  adicionarJogo: (steamAppId: string) =>
-    request<Game>('/games', { method: 'POST', body: json({ steamAppId }) }),
+  /** Busca com cache no banco: o que não existir localmente vem da Steam e já fica salvo. */
+  buscarJogos: (termo: string) => request<GameSearchItem[]>(`/games/search?q=${encodeURIComponent(termo)}`),
 
   precoDoJogo: (id: number) => request<GamePrice>(`/games/${id}/price`),
 
-  buscarNaSteam: (termo: string) =>
-    request<SteamSearchResult[]>(`/steam/search?q=${encodeURIComponent(termo)}`),
+  // ---------- sugestões ----------
 
   listarSugestoes: (status?: SuggestionStatus) =>
     request<Suggestion[]>(`/suggestions${status ? `?status=${status}` : ''}`),
 
   criarSugestao: (dados: SuggestionCreate) =>
     request<Suggestion>('/suggestions', { method: 'POST', body: json(dados) }),
+
+  excluirSugestao: (id: number) => request<void>(`/suggestions/${id}`, { method: 'DELETE' }),
 
   votar: (id: number, choice: VoteChoice) =>
     request<Suggestion>(`/suggestions/${id}/vote`, { method: 'PUT', body: json({ choice }) }),
@@ -106,14 +134,4 @@ export const api = {
 
   marcarComoComprada: (id: number) =>
     request<Suggestion>(`/suggestions/${id}/purchase`, { method: 'POST' }),
-}
-
-/** Aceita "620", "https://store.steampowered.com/app/620/Portal_2/" ou o appId colado com espaços. */
-export function extrairAppId(entrada: string): string | null {
-  const texto = entrada.trim()
-  if (!texto) return null
-  const porUrl = texto.match(/\/app\/(\d+)/)
-  if (porUrl) return porUrl[1]
-  if (/^\d+$/.test(texto)) return texto
-  return null
 }

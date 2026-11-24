@@ -110,3 +110,21 @@ export function IconeSeta({ size = 18 }: Props) {
     </svg>
   )
 }
+
+export function IconeLixeira({ size = 18 }: Props) {
+  return (
+    <svg {...base(size)}>
+      <path d="M4 7h16M10 7V5h4v2M6 7l1 13h10l1-13" />
+      <path d="M10 11v5M14 11v5" />
+    </svg>
+  )
+}
+
+export function IconeCopiar({ size = 18 }: Props) {
+  return (
+    <svg {...base(size)}>
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+    </svg>
+  )
+}

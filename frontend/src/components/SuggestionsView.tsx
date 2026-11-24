@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api, ApiError } from '../api'
-import type { Game, Suggestion, SuggestionStatus, User, VoteChoice } from '../types'
+import type { Suggestion, SuggestionStatus, User, VoteChoice } from '../types'
 import { IconeMais, IconeTrofeu } from './Icons'
 import { NewSuggestionModal } from './NewSuggestionModal'
 import { SuggestionCard } from './SuggestionCard'
@@ -19,7 +19,6 @@ const FILTROS: { valor: Filtro; rotulo: string }[] = [
 export function SuggestionsView({ usuario }: { usuario: User }) {
   const toast = useToast()
   const [sugestoes, setSugestoes] = useState<Suggestion[]>([])
-  const [jogos, setJogos] = useState<Game[]>([])
   const [filtro, setFiltro] = useState<Filtro>('TODAS')
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
@@ -29,9 +28,7 @@ export function SuggestionsView({ usuario }: { usuario: User }) {
   const carregar = useCallback(async () => {
     setErro(null)
     try {
-      const [lista, catalogo] = await Promise.all([api.listarSugestoes(), api.listarJogos()])
-      setSugestoes(lista)
-      setJogos(catalogo)
+      setSugestoes(await api.listarSugestoes())
     } catch (falha) {
       setErro(falha instanceof ApiError ? falha.message : 'Não foi possível carregar as sugestões.')
     } finally {
@@ -52,6 +49,22 @@ export function SuggestionsView({ usuario }: { usuario: User }) {
         toast.sucesso(mensagem)
       } catch (falha) {
         toast.erro(falha instanceof ApiError ? falha.message : 'Não deu certo. Tente novamente.')
+      } finally {
+        setEmAcao(null)
+      }
+    },
+    [toast],
+  )
+
+  const excluir = useCallback(
+    async (id: number) => {
+      setEmAcao(id)
+      try {
+        await api.excluirSugestao(id)
+        setSugestoes((atuais) => atuais.filter((item) => item.id !== id))
+        toast.sucesso('Sugestão excluída.')
+      } catch (falha) {
+        toast.erro(falha instanceof ApiError ? falha.message : 'Não foi possível excluir a sugestão.')
       } finally {
         setEmAcao(null)
       }
@@ -84,13 +97,7 @@ export function SuggestionsView({ usuario }: { usuario: User }) {
           </p>
         </div>
 
-        <button
-          type="button"
-          className="botao botao--primario"
-          onClick={() => setModalNova(true)}
-          disabled={jogos.length === 0}
-          title={jogos.length === 0 ? 'Cadastre um jogo no catálogo primeiro' : undefined}
-        >
+        <button type="button" className="botao botao--primario" onClick={() => setModalNova(true)}>
           <IconeMais />
           Nova sugestão
         </button>
@@ -139,10 +146,10 @@ export function SuggestionsView({ usuario }: { usuario: User }) {
           <h2>{filtro === 'TODAS' ? 'Nenhuma sugestão ainda' : 'Nada com esse status'}</h2>
           <p className="muted">
             {filtro === 'TODAS'
-              ? 'Escolha um jogo no catálogo e abra a primeira votação da família.'
+              ? 'Busque um jogo pelo nome e abra a primeira votação da família.'
               : 'Tente outro filtro para ver as outras sugestões.'}
           </p>
-          {filtro === 'TODAS' && jogos.length > 0 && (
+          {filtro === 'TODAS' && (
             <button type="button" className="botao botao--primario" onClick={() => setModalNova(true)}>
               <IconeMais />
               Criar sugestão
@@ -156,6 +163,7 @@ export function SuggestionsView({ usuario }: { usuario: User }) {
               key={sugestao.id}
               sugestao={sugestao}
               usuarioId={usuario.id}
+              podeExcluir={sugestao.userId === usuario.id || usuario.familyRole === 'DONO'}
               ocupado={emAcao === sugestao.id}
               onVotar={(escolha: VoteChoice) =>
                 void executar(
@@ -174,6 +182,7 @@ export function SuggestionsView({ usuario }: { usuario: User }) {
                   'Sugestão marcada como comprada.',
                 )
               }
+              onExcluir={() => void excluir(sugestao.id)}
             />
           ))}
         </div>
@@ -181,7 +190,6 @@ export function SuggestionsView({ usuario }: { usuario: User }) {
 
       <NewSuggestionModal
         aberto={modalNova}
-        jogos={jogos}
         jogoInicial={null}
         onFechar={() => setModalNova(false)}
         onCriada={() => {

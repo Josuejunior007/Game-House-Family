@@ -2,6 +2,8 @@
 ### Pré-requisito: rodar com APP_DEV_LOGIN_ENABLED=true (login falso, sem Steam)
 ### O IntelliJ guarda o cookie de sessão entre as requisições.
 ### Toda resposta de erro vem como { "status": ..., "message": ..., "fields": ... }
+### Obs.: o app é de uma família só. Se já existir família no banco, o passo 3 devolve 409;
+###       para repetir o roteiro do zero, exclua a família no passo 18 (ou no banco).
 ### ============================================================
 
 ### 0) Sem login -> 401
@@ -16,19 +18,130 @@ Content-Type: application/json
   "displayName": "Ana"
 }
 
-### Quem sou eu?
+### Quem sou eu? (familyId null antes de criar/entrar)
 GET http://localhost:8081/auth/me
 
-### ----------------------- BUSCA NA STEAM ----------------------
+### ----------------------- FAMÍLIA -----------------------------
 
-### Buscar jogo por nome (para não precisar do appId)
+### 2) Sem família: /family -> 204 (sem corpo)
+GET http://localhost:8081/family
+
+### 3) Criar a família (quem cria vira DONO) -> 201
+POST http://localhost:8081/family
+Content-Type: application/json
+
+{
+  "name": "Família do Josué"
+}
+
+### 4) Criar de novo -> 409
+POST http://localhost:8081/family
+Content-Type: application/json
+
+{
+  "name": "Outra"
+}
+
+### 5) Família com membros e papel
+GET http://localhost:8081/family
+
+### 6) Convidar o Beto pelo SteamID64 -> 201 (guarda o id do convite)
+POST http://localhost:8081/family/invites
+Content-Type: application/json
+
+{
+  "steamId": "76561198000000002"
+}
+
+> {% if (response.status === 201) { client.global.set("inviteId", response.body.id); } %}
+
+### 7) Convidar o mesmo SteamID de novo -> 409
+POST http://localhost:8081/family/invites
+Content-Type: application/json
+
+{
+  "steamId": "76561198000000002"
+}
+
+### 8) Convidar a si mesmo -> 409
+POST http://localhost:8081/family/invites
+Content-Type: application/json
+
+{
+  "steamId": "76561198000000001"
+}
+
+### 9) SteamID com menos de 17 números -> 400 com fields.steamId
+POST http://localhost:8081/family/invites
+Content-Type: application/json
+
+{
+  "steamId": "123"
+}
+
+### 10) Convites pendentes enviados pela família (só o dono vê)
+GET http://localhost:8081/family/invites
+
+### 11) Beto entra (troca a sessão do IntelliJ)
+POST http://localhost:8081/auth/dev-login
+Content-Type: application/json
+
+{
+  "steamId": "76561198000000002",
+  "displayName": "Beto"
+}
+
+### Beto ainda não está na família
+GET http://localhost:8081/auth/me
+
+### Convite recebido pelo SteamID do Beto
+GET http://localhost:8081/invites
+
+### Sem família, jogos -> 403
+GET http://localhost:8081/games
+
+### 12) Beto aceita o convite (usa o id guardado no passo 6) -> 200
+POST http://localhost:8081/invites/{{inviteId}}/accept
+
+### Agora /auth/me mostra a família e o papel MEMBRO
+GET http://localhost:8081/auth/me
+
+### Beto já pode ver os jogos
+GET http://localhost:8081/games
+
+### Membro NÃO convida -> 403
+POST http://localhost:8081/family/invites
+Content-Type: application/json
+
+{
+  "steamId": "76561198000000009"
+}
+
+### Membro NÃO remove o dono -> 403
+DELETE http://localhost:8081/family/members/1
+
+### ----------------------- BUSCA COM CACHE ---------------------
+
+### Volta a ser a Ana (dona)
+POST http://localhost:8081/auth/dev-login
+Content-Type: application/json
+
+{
+  "steamId": "76561198000000001",
+  "displayName": "Ana"
+}
+
+### Busca por nome: primeiro o banco; o que faltar vem da Steam e já fica salvo.
+### Devolve gameId (use no POST /suggestions).
+GET http://localhost:8081/games/search?q=portal
+
+> {% client.global.set("gameId", response.body[0].gameId); %}
+
+### Termo sem resultado -> []
+GET http://localhost:8081/games/search?q=zzzzqqqq
+
+### Busca antiga (só Steam, sem salvar), mantida por compatibilidade
 GET http://localhost:8081/steam/search?q=elden%20ring
-
-### Termo vazio devolve lista vazia
-GET http://localhost:8081/steam/search?q=
-
-### Sem o parâmetro q -> 400
-GET http://localhost:8081/steam/search
 
 ### ----------------------- JOGOS ------------------------------
 
@@ -37,7 +150,7 @@ GET http://localhost:8081/games
 
 > {% client.global.set("gameId", response.body[0].id); %}
 
-### Cadastrar jogo (Portal 2) e guardar o id em {{gameId}}
+### Cadastrar jogo manualmente pelo appId (Portal 2)
 POST http://localhost:8081/games
 Content-Type: application/json
 
@@ -125,7 +238,7 @@ Content-Type: application/json
   "choice": "APOIO"
 }
 
-### Login falso como Beto
+### Login falso como Beto (que vai precisar entrar de novo na família para votar)
 POST http://localhost:8081/auth/dev-login
 Content-Type: application/json
 
@@ -161,7 +274,7 @@ Content-Type: application/json
 ### Beto tenta encerrar antes do prazo (não é o criador) -> 403
 POST http://localhost:8081/suggestions/{{suggestionId}}/close
 
-### ----------------------- ENCERRAR / COMPRAR -----------------
+### ----------------------- ENCERRAR / COMPRAR / EXCLUIR -------
 
 ### Volta a ser a Ana (criadora)
 POST http://localhost:8081/auth/dev-login
@@ -189,8 +302,39 @@ POST http://localhost:8081/suggestions/{{suggestionId}}/purchase
 ### Comprar de novo -> 409
 POST http://localhost:8081/suggestions/{{suggestionId}}/purchase
 
+### Excluir a sugestão e os votos (criador ou dono) -> 204
+DELETE http://localhost:8081/suggestions/{{suggestionId}}
+
+### Buscar a sugestão excluída -> 404
+GET http://localhost:8081/suggestions/{{suggestionId}}
+
 ### Rota inexistente (logado) -> 404 com mensagem
 GET http://localhost:8081/rota-inexistente
+
+### ----------------------- LIMPEZA -----------------------------
+
+### Beto (membro) sai da família -> 204
+POST http://localhost:8081/auth/dev-login
+Content-Type: application/json
+
+{
+  "steamId": "76561198000000002",
+  "displayName": "Beto"
+}
+
+
+### Depois de sair, jogos voltam a dar 403
+GET http://localhost:8081/games
+
+### Volta a ser a Ana (dona) e exclui a família -> 204
+POST http://localhost:8081/auth/dev-login
+Content-Type: application/json
+
+{
+  "steamId": "76561198000000001",
+  "displayName": "Ana"
+}
+
 
 ### Logout
 POST http://localhost:8081/auth/logout

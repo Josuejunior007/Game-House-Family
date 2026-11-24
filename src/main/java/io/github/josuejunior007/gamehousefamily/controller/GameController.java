@@ -3,6 +3,7 @@ package io.github.josuejunior007.gamehousefamily.controller;
 import io.github.josuejunior007.gamehousefamily.dto.GameCreateRequest;
 import io.github.josuejunior007.gamehousefamily.dto.GamePriceResponse;
 import io.github.josuejunior007.gamehousefamily.dto.GameResponse;
+import io.github.josuejunior007.gamehousefamily.dto.GameSearchItem;
 import io.github.josuejunior007.gamehousefamily.dto.GameUpdateRequest;
 import io.github.josuejunior007.gamehousefamily.service.GameService;
 import jakarta.validation.Valid;
@@ -32,6 +33,15 @@ public class GameController {
                 .stream()
                 .map(GameResponse::de)
                 .toList();
+    }
+
+    /**
+     * Busca por nome com cache no banco: primeiro o catálogo local, depois a Steam (o que vier
+     * de lá já é salvo). O retorno sempre tem gameId, então serve direto para criar sugestão.
+     */
+    @GetMapping("/games/search")
+    public List<GameSearchItem> buscar(@RequestParam(name = "q", required = false) String termo) {
+        return gameService.buscar(termo);
     }
 
     @GetMapping("/games/{id}")

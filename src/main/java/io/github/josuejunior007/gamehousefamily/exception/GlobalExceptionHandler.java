@@ -88,6 +88,26 @@ public class GlobalExceptionHandler {
         return erro(HttpStatus.FORBIDDEN, e.getMessage());
     }
 
+    @ExceptionHandler(FamiliaJaExisteException.class)
+    public ResponseEntity<ApiError> handleFamiliaJaExiste(FamiliaJaExisteException e) {
+        return erro(HttpStatus.CONFLICT, e.getMessage());
+    }
+
+    @ExceptionHandler(ConviteInvalidoException.class)
+    public ResponseEntity<ApiError> handleConviteInvalido(ConviteInvalidoException e) {
+        return erro(HttpStatus.CONFLICT, e.getMessage());
+    }
+
+    @ExceptionHandler(ConviteNaoEncontradoException.class)
+    public ResponseEntity<ApiError> handleConviteNaoEncontrado(ConviteNaoEncontradoException e) {
+        return erro(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
+    @ExceptionHandler(MembroNaoEncontradoException.class)
+    public ResponseEntity<ApiError> handleMembroNaoEncontrado(MembroNaoEncontradoException e) {
+        return erro(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
     @ExceptionHandler(SteamIndisponivelException.class)
     public ResponseEntity<ApiError> handleSteamIndisponivel(SteamIndisponivelException e) {
         return erro(HttpStatus.BAD_GATEWAY, e.getMessage());

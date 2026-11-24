@@ -10,16 +10,24 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
     private final String frontendUrl;
+    private final FamilyInterceptor familyInterceptor;
 
-    public WebConfig(@Value("${app.frontend-url:}") String frontendUrl) {
+    public WebConfig(@Value("${app.frontend-url:}") String frontendUrl, FamilyInterceptor familyInterceptor) {
         this.frontendUrl = FrontendUrl.resolver(frontendUrl);
+        this.familyInterceptor = familyInterceptor;
     }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new AuthInterceptor())
+                .order(1)
                 .addPathPatterns("/**")
                 .excludePathPatterns("/", "/error", "/auth/steam/**", "/auth/dev-login", "/auth/logout");
+
+        // Só depois do login: o app (jogos, catálogo e sugestões) é da família.
+        registry.addInterceptor(familyInterceptor)
+                .order(2)
+                .addPathPatterns("/games", "/games/**", "/suggestions", "/suggestions/**", "/steam", "/steam/**");
     }
 
     @Override

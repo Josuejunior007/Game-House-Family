@@ -42,6 +42,7 @@ class SuggestionServiceTest {
     @Mock GameRepository gameRepository;
     @Mock UserRepository userRepository;
     @Mock VoteRepository voteRepository;
+    @Mock FamilyService familyService;
 
     SuggestionService service;
     Game game;
@@ -49,7 +50,8 @@ class SuggestionServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new SuggestionService(suggestionRepository, gameRepository, userRepository, voteRepository);
+        service = new SuggestionService(suggestionRepository, gameRepository, userRepository, voteRepository,
+                familyService);
         game = new Game("620", "Portal 2");
         ReflectionTestUtils.setField(game, "id", 1);
         criador = new User("76561198000000001", "Ana", null);
@@ -110,6 +112,7 @@ class SuggestionServiceTest {
 
     private Suggestion sugestaoComPrazo(Instant prazo) {
         Suggestion s = new Suggestion(criador, game, 1, prazo);
+        ReflectionTestUtils.setField(s, "id", 10);
         when(suggestionRepository.findById(10)).thenReturn(Optional.of(s));
         return s;
     }
@@ -165,5 +168,36 @@ class SuggestionServiceTest {
         service.encerrar(10, 3);
 
         assertThat(s.getStatus()).isEqualTo(SuggestionStatus.APROVADA);
+    }
+
+    // ---------- excluir ----------
+
+    @Test
+    void criadorExcluiSugestaoEOsVotos() {
+        Suggestion s = sugestaoComPrazo(Instant.now().plusSeconds(3600));
+
+        service.excluir(10, 2); // 2 = criador
+
+        verify(voteRepository).deleteBySuggestionId(10);
+        verify(suggestionRepository).delete(s);
+    }
+
+    @Test
+    void donoDaFamiliaExcluiSugestaoDeOutro() {
+        Suggestion s = sugestaoComPrazo(Instant.now().plusSeconds(3600));
+        when(familyService.ehDono(3)).thenReturn(true);
+
+        service.excluir(10, 3);
+
+        verify(suggestionRepository).delete(s);
+    }
+
+    @Test
+    void outroMembroNaoExcluiSugestao() {
+        Suggestion s = sugestaoComPrazo(Instant.now().plusSeconds(3600));
+        when(familyService.ehDono(3)).thenReturn(false);
+
+        assertThrows(AcessoNegadoException.class, () -> service.excluir(10, 3));
+        verify(suggestionRepository, never()).delete(any());
     }
 }

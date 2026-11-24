@@ -3,14 +3,16 @@ import { useAuth } from '../auth'
 import { Avatar } from './Avatar'
 import { IconeSair } from './Icons'
 
-export type Aba = 'sugestoes' | 'catalogo'
+export type Aba = 'sugestoes' | 'catalogo' | 'familia' | 'convites'
 
 interface Props {
   aba: Aba
   onMudarAba: (aba: Aba) => void
+  temFamilia: boolean
+  convitesPendentes: number
 }
 
-export function Header({ aba, onMudarAba }: Props) {
+export function Header({ aba, onMudarAba, temFamilia, convitesPendentes }: Props) {
   const { usuario, sair } = useAuth()
   const [saindo, setSaindo] = useState(false)
 
@@ -48,28 +50,62 @@ export function Header({ aba, onMudarAba }: Props) {
         </div>
 
         <nav className="abas" aria-label="Seções">
+          {temFamilia && (
+            <>
+              <button
+                type="button"
+                className={`aba ${aba === 'sugestoes' ? 'aba--ativa' : ''}`}
+                onClick={() => onMudarAba('sugestoes')}
+                aria-current={aba === 'sugestoes' ? 'page' : undefined}
+              >
+                Sugestões
+              </button>
+              <button
+                type="button"
+                className={`aba ${aba === 'catalogo' ? 'aba--ativa' : ''}`}
+                onClick={() => onMudarAba('catalogo')}
+                aria-current={aba === 'catalogo' ? 'page' : undefined}
+              >
+                Catálogo
+              </button>
+            </>
+          )}
+
           <button
             type="button"
-            className={`aba ${aba === 'sugestoes' ? 'aba--ativa' : ''}`}
-            onClick={() => onMudarAba('sugestoes')}
-            aria-current={aba === 'sugestoes' ? 'page' : undefined}
+            className={`aba ${aba === 'familia' ? 'aba--ativa' : ''}`}
+            onClick={() => onMudarAba('familia')}
+            aria-current={aba === 'familia' ? 'page' : undefined}
           >
-            Sugestões
+            Família
           </button>
+
           <button
             type="button"
-            className={`aba ${aba === 'catalogo' ? 'aba--ativa' : ''}`}
-            onClick={() => onMudarAba('catalogo')}
-            aria-current={aba === 'catalogo' ? 'page' : undefined}
+            className={`aba ${aba === 'convites' ? 'aba--ativa' : ''}`}
+            onClick={() => onMudarAba('convites')}
+            aria-current={aba === 'convites' ? 'page' : undefined}
           >
-            Catálogo
+            Convites
+            {convitesPendentes > 0 && (
+              <span className="aba__contador" aria-label={`${convitesPendentes} convite(s) pendente(s)`}>
+                {convitesPendentes}
+              </span>
+            )}
           </button>
         </nav>
 
         {usuario && (
           <div className="topo__usuario">
-            <Avatar nome={usuario.displayName} url={usuario.avatarUrl} tamanho={30} />
-            <span className="topo__nome">{usuario.displayName}</span>
+            <button
+              type="button"
+              className="topo__perfil"
+              onClick={() => onMudarAba('familia')}
+              title="Ver perfil e família"
+            >
+              <Avatar nome={usuario.displayName} url={usuario.avatarUrl} tamanho={30} />
+              <span className="topo__nome">{usuario.displayName}</span>
+            </button>
             <button
               type="button"
               className="botao botao--icone"

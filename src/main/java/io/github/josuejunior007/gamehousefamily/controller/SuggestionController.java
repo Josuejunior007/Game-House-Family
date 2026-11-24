@@ -50,4 +50,11 @@ public class SuggestionController {
                                       @PathVariable Integer id) {
         return suggestionService.marcarComoComprada(id, userId);
     }
+
+    @DeleteMapping("/suggestions/{id}")
+    public ResponseEntity<Void> excluir(@SessionAttribute(AuthInterceptor.SESSION_USER_ID) Integer userId,
+                                        @PathVariable Integer id) {
+        suggestionService.excluir(id, userId);
+        return ResponseEntity.noContent().build();
+    }
 }

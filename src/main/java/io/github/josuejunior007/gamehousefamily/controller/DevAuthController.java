@@ -4,6 +4,7 @@ import io.github.josuejunior007.gamehousefamily.config.SessaoUsuario;
 import io.github.josuejunior007.gamehousefamily.dto.DevLoginRequest;
 import io.github.josuejunior007.gamehousefamily.dto.UserResponse;
 import io.github.josuejunior007.gamehousefamily.model.User;
+import io.github.josuejunior007.gamehousefamily.service.FamilyService;
 import io.github.josuejunior007.gamehousefamily.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -21,15 +22,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class DevAuthController {
 
     private final UserService userService;
+    private final FamilyService familyService;
 
-    public DevAuthController(UserService userService) {
+    public DevAuthController(UserService userService, FamilyService familyService) {
         this.userService = userService;
+        this.familyService = familyService;
     }
 
     @PostMapping("/auth/dev-login")
     public UserResponse devLogin(HttpServletRequest request, @RequestBody @Valid DevLoginRequest body) {
         User user = userService.entrarDev(body.steamId(), body.displayName());
         SessaoUsuario.iniciar(request, user.getId());
-        return UserResponse.de(user);
+        return UserResponse.de(user, familyService.resumo(user.getId()).orElse(null));
     }
 }

@@ -1,14 +1,11 @@
 package io.github.josuejunior007.gamehousefamily.service;
 
 import io.github.josuejunior007.gamehousefamily.dto.SteamPerfil;
-import io.github.josuejunior007.gamehousefamily.exception.AcessoNegadoException;
 import io.github.josuejunior007.gamehousefamily.model.User;
 import io.github.josuejunior007.gamehousefamily.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -16,25 +13,19 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final SteamService steamService;
-    private final List<String> steamIdsPermitidos;
 
-    public UserService(UserRepository userRepository, SteamService steamService,
-                       @Value("${app.allowed-steam-ids:}") List<String> steamIdsPermitidos) {
+    public UserService(UserRepository userRepository, SteamService steamService) {
         this.userRepository = userRepository;
         this.steamService = steamService;
-        this.steamIdsPermitidos = steamIdsPermitidos.stream()
-                .map(String::trim)
-                .filter(id -> !id.isBlank())
-                .toList();
     }
 
-    /** Chamado depois que a Steam confirmou a identidade. Cria o usuário no 1º login e atualiza nome/avatar nos próximos. */
+    /**
+     * Chamado depois que a Steam confirmou a identidade. Cria o usuário no 1º login e atualiza
+     * nome/avatar nos próximos. O acesso ao app não é decidido aqui: quem não está na família
+     * entra, vê o onboarding e os convites, mas o FamilyInterceptor barra o resto.
+     */
     @Transactional
     public User entrarComSteam(String steamId) {
-        // lista vazia = qualquer conta Steam entra; preenchida = só a família
-        if (!steamIdsPermitidos.isEmpty() && !steamIdsPermitidos.contains(steamId)) {
-            throw new AcessoNegadoException("Esta conta Steam não faz parte da família.");
-        }
         SteamPerfil perfil = steamService.buscarPerfil(steamId);
         return salvarOuAtualizar(steamId, perfil.displayName(), perfil.avatarUrl());
     }

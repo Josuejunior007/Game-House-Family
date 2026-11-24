@@ -35,13 +35,16 @@ public class SuggestionService {
     private final GameRepository gameRepository;
     private final UserRepository userRepository;
     private final VoteRepository voteRepository;
+    private final FamilyService familyService;
 
     public SuggestionService(SuggestionRepository suggestionRepository, GameRepository gameRepository,
-                             UserRepository userRepository, VoteRepository voteRepository) {
+                             UserRepository userRepository, VoteRepository voteRepository,
+                             FamilyService familyService) {
         this.suggestionRepository = suggestionRepository;
         this.gameRepository = gameRepository;
         this.userRepository = userRepository;
         this.voteRepository = voteRepository;
+        this.familyService = familyService;
     }
 
     @Transactional
@@ -104,10 +107,26 @@ public class SuggestionService {
         return montarResposta(suggestion, usuarioLogadoId);
     }
 
+    /**
+     * Apaga a sugestão e os votos dela. Pode quem criou ou o dono da família (para limpar
+     * sugestões erradas sem depender do criador).
+     */
+    @Transactional
+    public void excluir(int id, int usuarioLogadoId) {
+        Suggestion suggestion = buscarOuFalhar(id);
+
+        boolean criador = suggestion.getUser().getId() == usuarioLogadoId;
+        if (!criador && !familyService.ehDono(usuarioLogadoId)) {
+            throw new AcessoNegadoException("Só quem criou a sugestão ou o dono da família pode excluí-la.");
+        }
+
+        voteRepository.deleteBySuggestionId(suggestion.getId());
+        suggestionRepository.delete(suggestion);
+    }
+
     /** Chamado pelo agendador: fecha tudo que passou do prazo. Devolve quantas foram encerradas. */
     @Transactional
-    public int encerrarVencidas() {
-        List<Suggestion> vencidas = suggestionRepository
+    public int encerrarVencidas() {        List<Suggestion> vencidas = suggestionRepository
                 .findByStatusAndVotingDeadlineBefore(SuggestionStatus.EM_VOTACAO, Instant.now());
         vencidas.forEach(this::fechar);
         return vencidas.size();

@@ -1309,6 +1309,326 @@ code {
   border-left-color: var(--azul);
 }
 
+/* ---------------- família / perfil / convites ---------------- */
+
+.aba__contador {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #05131f;
+  background: var(--dourado);
+}
+
+.topo__perfil {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.topo__perfil:hover .topo__nome {
+  color: var(--azul);
+}
+
+.perfil {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 22px;
+  padding: 20px;
+  background: linear-gradient(180deg, rgba(20, 36, 58, 0.9), rgba(15, 26, 43, 0.95));
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+}
+
+.perfil__dados {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.perfil__linha {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.perfil__linha h2 {
+  font-size: 1.2rem;
+}
+
+.perfil__rotulo {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+
+.perfil__id {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.perfil__id code {
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.etiqueta--dono {
+  color: var(--dourado);
+  background: rgba(255, 200, 87, 0.1);
+  border-color: rgba(255, 200, 87, 0.35);
+}
+
+.etiqueta--membro {
+  color: var(--azul);
+  background: rgba(102, 192, 244, 0.08);
+  border-color: rgba(102, 192, 244, 0.28);
+}
+
+.onboarding {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 44px 24px;
+  text-align: center;
+  background: rgba(15, 26, 43, 0.5);
+  border: 1px dashed var(--borda-forte);
+  border-radius: 18px;
+}
+
+.onboarding h2 {
+  font-size: 1.15rem;
+}
+
+.onboarding p {
+  max-width: 54ch;
+  font-size: 0.9rem;
+}
+
+.onboarding__form {
+  width: 100%;
+  max-width: 540px;
+  margin-top: 8px;
+}
+
+.familia {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.familia__topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.familia__topo h2 {
+  margin-bottom: 4px;
+  font-size: 1.25rem;
+}
+
+.membros {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.membro {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+}
+
+.membro__info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.membro__nome {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.membro__id {
+  overflow: hidden;
+  font-size: 0.76rem;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+}
+
+.membro .etiqueta,
+.membro .confirmacao {
+  flex: none;
+}
+
+.painel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(20, 36, 58, 0.75), rgba(15, 26, 43, 0.85));
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+}
+
+.painel h3 {
+  font-size: 1rem;
+}
+
+.painel__dica {
+  max-width: 70ch;
+  font-size: 0.84rem;
+}
+
+.painel__subtitulo {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+
+.painel--perigo {
+  background: rgba(74, 31, 40, 0.22);
+  border-color: rgba(255, 107, 107, 0.28);
+}
+
+.painel--perigo h3 {
+  color: #ffb0b0;
+}
+
+.convites-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.convite-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  background: #0a1422;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+}
+
+.convite-linha__nome {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.convite-linha__data {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--texto-suave);
+}
+
+.convites-recebidos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.convite-recebido {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  background: linear-gradient(180deg, rgba(20, 36, 58, 0.9), rgba(15, 26, 43, 0.95));
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+}
+
+.convite-recebido__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.9rem;
+}
+
+.convite-recebido__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.esqueleto--perfil {
+  height: 118px;
+  margin-top: 22px;
+}
+
+.busca--catalogo {
+  margin-top: 18px;
+}
+
+.resultados--catalogo {
+  max-height: none;
+  margin-bottom: 20px;
+}
+
+.resultado__acoes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.botao--texto-perigo {
+  color: #ffb0b0;
+}
+
+.botao--texto-perigo:hover:not(:disabled) {
+  color: #ffd5dc;
+  border-color: rgba(255, 107, 107, 0.45);
+}
+
+.previa__trocar {
+  margin-left: auto;
+}
+
 /* ---------------- responsivo ---------------- */
 
 @media (max-width: 820px) {
@@ -1364,6 +1684,49 @@ code {
 
   .resultado .botao {
     grid-column: 1 / -1;
+  }
+
+  .resultado__acoes {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
+  .perfil {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .membro {
+    flex-wrap: wrap;
+  }
+
+  .membro .confirmacao {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .convite-recebido {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .convite-recebido__acoes .botao {
+    flex: 1;
+  }
+
+  .onboarding__form,
+  .painel .form-linha {
+    flex-direction: column;
+  }
+
+  .onboarding__form .botao,
+  .painel .form-linha .botao {
+    width: 100%;
+  }
+
+  .aba {
+    padding: 6px 11px;
+    font-size: 0.8rem;
   }
 }
 

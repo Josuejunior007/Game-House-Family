@@ -8,7 +8,8 @@ interface AuthContextValue {
   /** Preenchido quando a API não respondeu (fora do ar, CORS bloqueado...). */
   erroConexao: string | null
   entrarComSteam: () => void
-  entrarDev: (steamId: string, nome: string) => Promise<void>
+  /** Relê /auth/me — usado depois de aceitar convite ou criar família. */
+  recarregar: () => Promise<void>
   sair: () => Promise<void>
 }
 
@@ -50,8 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.assign(api.urlLoginSteam())
   }, [])
 
-  const entrarDev = useCallback(async (steamId: string, nome: string) => {
-    const dados = await api.devLogin(steamId, nome)
+  const recarregar = useCallback(async () => {
+    const dados = await api.me()
     setUsuario(dados)
     setErroConexao(null)
   }, [])
@@ -62,8 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const valor = useMemo<AuthContextValue>(
-    () => ({ usuario, carregando, erroConexao, entrarComSteam, entrarDev, sair }),
-    [usuario, carregando, erroConexao, entrarComSteam, entrarDev, sair],
+    () => ({ usuario, carregando, erroConexao, entrarComSteam, recarregar, sair }),
+    [usuario, carregando, erroConexao, entrarComSteam, recarregar, sair],
   )
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>

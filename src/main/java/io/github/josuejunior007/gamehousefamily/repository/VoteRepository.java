@@ -11,4 +11,7 @@ public interface VoteRepository extends JpaRepository<Vote, Integer> {
     Optional<Vote> findByUserIdAndSuggestionId(int userId, int suggestionId);
 
     long countBySuggestionIdAndChoice(int suggestionId, VoteChoice choice);
+
+    /** Chamado ao excluir uma sugestão: sem isso a FK de vote impede a exclusão. */
+    void deleteBySuggestionId(int suggestionId);
 }

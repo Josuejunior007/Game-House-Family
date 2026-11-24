@@ -6,6 +6,7 @@ import io.github.josuejunior007.gamehousefamily.config.SessaoUsuario;
 import io.github.josuejunior007.gamehousefamily.dto.UserResponse;
 import io.github.josuejunior007.gamehousefamily.exception.UserIdNaoEncontradoNoBancoException;
 import io.github.josuejunior007.gamehousefamily.model.User;
+import io.github.josuejunior007.gamehousefamily.service.FamilyService;
 import io.github.josuejunior007.gamehousefamily.service.SteamOpenIdService;
 import io.github.josuejunior007.gamehousefamily.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,12 +26,14 @@ public class AuthController {
 
     private final SteamOpenIdService openIdService;
     private final UserService userService;
+    private final FamilyService familyService;
     private final String frontendUrl;
 
-    public AuthController(SteamOpenIdService openIdService, UserService userService,
+    public AuthController(SteamOpenIdService openIdService, UserService userService, FamilyService familyService,
                           @Value("${app.frontend-url:}") String frontendUrl) {
         this.openIdService = openIdService;
         this.userService = userService;
+        this.familyService = familyService;
         this.frontendUrl = FrontendUrl.resolver(frontendUrl);
     }
 
@@ -57,7 +60,7 @@ public class AuthController {
     public UserResponse me(@SessionAttribute(AuthInterceptor.SESSION_USER_ID) Integer userId) {
         User user = userService.buscarPorId(userId)
                 .orElseThrow(() -> new UserIdNaoEncontradoNoBancoException("Usuário não encontrado: " + userId));
-        return UserResponse.de(user);
+        return UserResponse.de(user, familyService.resumo(userId).orElse(null));
     }
 
     @PostMapping("/auth/logout")

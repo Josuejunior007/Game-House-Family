@@ -3,19 +3,40 @@ import { formatarData, prazo, ROTULO_STATUS, votacaoAberta } from '../format'
 import type { Suggestion, VoteChoice } from '../types'
 import { Avatar } from './Avatar'
 import { Capa } from './Capa'
-import { IconePolegar, IconePolegarBaixo, IconeRelogio, IconeSacola, IconeSeta, IconeTrofeu } from './Icons'
+import {
+  IconeLixeira,
+  IconePolegar,
+  IconePolegarBaixo,
+  IconeRelogio,
+  IconeSacola,
+  IconeSeta,
+  IconeTrofeu,
+} from './Icons'
 
 interface Props {
   sugestao: Suggestion
   usuarioId: number
+  /** Criador ou dono da família. */
+  podeExcluir: boolean
   ocupado: boolean
   onVotar: (escolha: VoteChoice) => void
   onEncerrar: () => void
   onComprar: () => void
+  onExcluir: () => void
 }
 
-export function SuggestionCard({ sugestao, usuarioId, ocupado, onVotar, onEncerrar, onComprar }: Props) {
+export function SuggestionCard({
+  sugestao,
+  usuarioId,
+  podeExcluir,
+  ocupado,
+  onVotar,
+  onEncerrar,
+  onComprar,
+  onExcluir,
+}: Props) {
   const [confirmandoEncerrar, setConfirmandoEncerrar] = useState(false)
+  const [confirmandoExcluir, setConfirmandoExcluir] = useState(false)
 
   const aberta = votacaoAberta(sugestao)
   const emVotacao = sugestao.status === 'EM_VOTACAO'
@@ -149,6 +170,43 @@ export function SuggestionCard({ sugestao, usuarioId, ocupado, onVotar, onEncerr
                   onClick={() => setConfirmandoEncerrar(false)}
                 >
                   Cancelar
+                </button>
+              </span>
+            )}
+
+            {podeExcluir && !confirmandoExcluir && (
+              <button
+                type="button"
+                className="botao botao--fantasma botao--pequeno botao--texto-perigo"
+                onClick={() => setConfirmandoExcluir(true)}
+                disabled={ocupado}
+                title="Excluir esta sugestão"
+              >
+                <IconeLixeira size={14} />
+                Excluir
+              </button>
+            )}
+
+            {podeExcluir && confirmandoExcluir && (
+              <span className="confirmacao">
+                <span>Excluir?</span>
+                <button
+                  type="button"
+                  className="botao botao--perigo botao--pequeno"
+                  onClick={() => {
+                    setConfirmandoExcluir(false)
+                    onExcluir()
+                  }}
+                  disabled={ocupado}
+                >
+                  Sim
+                </button>
+                <button
+                  type="button"
+                  className="botao botao--fantasma botao--pequeno"
+                  onClick={() => setConfirmandoExcluir(false)}
+                >
+                  Não
                 </button>
               </span>
             )}
